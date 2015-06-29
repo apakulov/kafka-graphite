@@ -1,0 +1,13 @@
+apply from: file('scala.gradle')
+apply plugin: 'scala'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.apache.kafka:kafka_$baseScalaVersion:0.8.2.1"
+    compile 'com.yammer.metrics:metrics-graphite:2.2.0'
+
+    testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
+}
