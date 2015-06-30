@@ -1,5 +1,18 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:2.2.6'
+    }
+}
+
 apply from: file('scala.gradle')
+apply plugin: 'os-package'
 apply plugin: 'scala'
+
+version '0.1'
 
 repositories {
     mavenCentral()
@@ -10,4 +23,24 @@ dependencies {
     compile 'com.yammer.metrics:metrics-graphite:2.2.0'
 
     testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
+}
+
+jar {
+    baseName "kafka_${baseScalaVersion}-graphite"
+}
+
+ospackage {
+    release = '1'
+    os = 'LINUX'
+
+    into '/opt/kafka'
+
+    from(jar.outputs.files) {
+        into 'libs'
+    }
+
+    from(configurations.compile) {
+        include 'metrics-graphite*'
+        into 'libs'
+    }
 }

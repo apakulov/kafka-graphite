@@ -27,7 +27,7 @@ class GraphiteMockServer extends Thread {
           content += iterator.next
         }
       } catch {
-        case e: SocketException => "Socket closed?"
+        case e: SocketException => "Socket closed, good bye.."
       }
     }
   }

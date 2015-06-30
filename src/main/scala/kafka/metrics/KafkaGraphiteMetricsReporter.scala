@@ -24,7 +24,7 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
     synchronized {
       if (!initialized) {
         val metricsConfig = new KafkaGraphiteMetricsConfig(props)
-        val socketProvider = new DefaultSocketProvider(metricsConfig.hostname, metricsConfig.port)
+        val socketProvider = new DefaultSocketProvider(metricsConfig.host, metricsConfig.port)
 
         val metricPredicate = new MetricPredicate {
           val include = Option(metricsConfig.include)

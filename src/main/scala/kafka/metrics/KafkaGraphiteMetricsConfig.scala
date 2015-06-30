@@ -6,7 +6,7 @@ import kafka.utils.VerifiableProperties
 
 class KafkaGraphiteMetricsConfig(props: VerifiableProperties) extends KafkaMetricsConfig(props) {
 
-  val hostname = props.getString("kafka.graphite.metrics.hostname", "localhost")
+  val host = props.getString("kafka.graphite.metrics.host", "localhost")
 
   var port = props.getInt("kafka.graphite.metrics.port", 2003)
 
