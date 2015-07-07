@@ -3,7 +3,7 @@ Kafka Graphite Metrics Reporter
 
 Build
 -----
-Current plugin could be compiled with different Scala versions, use *scalaVersion* Gradle;'s property to define version
+Current plugin could be compiled with different Scala versions, use *scalaVersion* Gradle's property to define version
 
 ```
 ./gradlew -PscalaVersion=2.10.5 build 

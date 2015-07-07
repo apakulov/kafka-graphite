@@ -12,7 +12,7 @@ apply from: file('scala.gradle')
 apply plugin: 'os-package'
 apply plugin: 'scala'
 
-version '0.1'
+version '0.1.1'
 
 repositories {
     mavenCentral()

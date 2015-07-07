@@ -49,6 +49,8 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
           }
         }
 
+        info("Configuring Kafka Graphite Reporter with host=%s, port=%d and include=%s, exclude=%s".format(
+          metricsConfig.host, metricsConfig.port, metricsConfig.include, metricsConfig.exclude))
         underlying = new GraphiteReporter(Metrics.defaultRegistry, metricsConfig.prefix, metricPredicate,
                                           socketProvider, Clock.defaultClock)
         if (metricsConfig.enabled) {
