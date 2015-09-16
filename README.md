@@ -1,6 +1,22 @@
 Kafka Graphite Metrics Reporter
 ===============================
 
+Install
+-------
+Maven
+``` xml
+<dependency>
+  <groupId>com.pakulov.kafka</groupId>
+  <artifactId>kafka_2.10-graphite</artifactId>
+  <version>0.1.2</version>
+</dependency>
+```
+
+Gradle
+``` groovy
+compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.2'
+```
+
 Build
 -----
 Current plugin could be compiled with different Scala versions, use *scalaVersion* Gradle's property to define version
