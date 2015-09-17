@@ -33,6 +33,8 @@ class KafkaGraphiteMetricsConfig(props: VerifiableProperties) extends KafkaMetri
 
   var exclude = getPattern("kafka.graphite.metrics.exclude", null)
 
+  var jvm = props.getBoolean("kafka.graphite.metrics.jvm.enabled", default = true)
+
   private def getPattern(key: String, default: Pattern): Pattern = {
     if (!props.containsKey(key)) default
     else Pattern.compile(props.getProperty(key))

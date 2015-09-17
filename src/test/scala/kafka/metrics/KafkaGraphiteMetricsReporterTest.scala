@@ -132,4 +132,39 @@ class KafkaGraphiteMetricsReporterTest extends FlatSpec with Matchers with Befor
 
     graphiteMetricsReporter.stopReporter()
   }
+
+  it should "include jvm metrics by default" in {
+    val props = new Properties
+    props.put("kafka.metrics.reporters", "kafka.metrics.KafkaGraphiteMetricsReporter")
+    props.put("kafka.metrics.polling.interval.secs", "1")
+    props.put("kafka.graphite.metrics.reporter.enabled", "true")
+    props.put("kafka.graphite.metrics.port", graphiteServer.port.toString)
+
+    val graphiteMetricsReporter = new KafkaGraphiteMetricsReporter()
+    graphiteMetricsReporter.init(new VerifiableProperties(props))
+
+    Thread.sleep(2000)
+
+    assert(graphiteServer.content.toList.exists(item => item.contains("jvm")))
+
+    graphiteMetricsReporter.stopReporter()
+  }
+
+  it should "allow to disable jvm metrics" in {
+    val props = new Properties
+    props.put("kafka.metrics.reporters", "kafka.metrics.KafkaGraphiteMetricsReporter")
+    props.put("kafka.metrics.polling.interval.secs", "1")
+    props.put("kafka.graphite.metrics.reporter.enabled", "true")
+    props.put("kafka.graphite.metrics.jvm.enabled", "false")
+    props.put("kafka.graphite.metrics.port", graphiteServer.port.toString)
+
+    val graphiteMetricsReporter = new KafkaGraphiteMetricsReporter()
+    graphiteMetricsReporter.init(new VerifiableProperties(props))
+
+    Thread.sleep(2000)
+
+    assert(!graphiteServer.content.toList.exists(item => item.contains("jvm")))
+
+    graphiteMetricsReporter.stopReporter()
+  }
 }

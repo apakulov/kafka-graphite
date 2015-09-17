@@ -8,13 +8,13 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka_2.10-graphite</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
 </dependency>
 ```
 
 Gradle
 ``` groovy
-compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.2'
+compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.3'
 ```
 
 Build
@@ -45,3 +45,4 @@ Plugin has a set of possible parameters:
 * `kafka.graphite.metrics.prefix`: The metric prefix that's sent with metric names (default: kafka)
 * `kafka.graphite.metrics.include`: A regular expression allowing explicitly include certain metrics (default: null)
 * `kafka.graphite.metrics.exclude`: A regular expression allowing you to exclude certain metrics (default: null)
+* `kafka.graphite.metrics.jvm.enabled`: Controls JVM metrics output (default: true)
