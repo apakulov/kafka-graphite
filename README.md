@@ -53,12 +53,12 @@ At first you have to configure kafka reporters *server.properties* file
 
 For **KafkaMetricsReporter** use:
 * `kafka.metrics.reporters=kafka.metrics.KafkaGraphiteMetricsReporter`
+
 For **MetricsReporter** use:
 * `metric.reporters=org.apache.kafka.common.metrics.GraphiteReporter`
 
-* `kafka.metrics.polling.interval.secs=60`: Polling interval that will be used for all Kafka metrics
-
 Plugin has a set of possible parameters:
+* `kafka.metrics.polling.interval.secs=60`: Polling interval that will be used for all Kafka metrics
 * `kafka.graphite.metrics.reporter.enabled`: Enables actual plugin (default: false)
 * `kafka.graphite.metrics.host`: The graphite host to connect to (default: localhost)
 * `kafka.graphite.metrics.port`: The port to connect to (default: 2003)
