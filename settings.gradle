@@ -1,1 +1,4 @@
-rootProject.name = 'kafka-graphite'
+rootProject.name = 'kafka-graphite-reporter'
+
+include ':kafka-graphite'
+include ':kafka-graphite-clients'

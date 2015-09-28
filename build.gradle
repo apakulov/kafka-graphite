@@ -10,80 +10,105 @@ buildscript {
         classpath 'com.netflix.nebula:gradle-ospackage-plugin:2.2.6'
     }
 }
-apply from: file('scala.gradle')
-apply plugin: 'os-package'
-apply plugin: 'scala'
-apply plugin: 'license'
-apply plugin: 'maven'
-apply plugin: 'nexus'
 
-group 'com.pakulov.kafka'
-version '0.1.3'
+subprojects {
+    group 'com.pakulov.kafka'
+    version '0.1.4'
 
-repositories {
-    mavenCentral()
-}
+    repositories {
+        mavenCentral()
+    }
 
-dependencies {
-    compile "org.apache.kafka:kafka_$baseScalaVersion:0.8.2.1"
-    compile 'com.yammer.metrics:metrics-graphite:2.2.0'
+    apply plugin: 'license'
+    apply plugin: 'maven'
+    apply plugin: 'nexus'
 
-    testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
-}
-
-
-jar {
-    baseName "kafka_${baseScalaVersion}-graphite"
-}
-
-project.afterEvaluate {
-    project.tasks.getByName('javadocJar').baseName = "kafka_${baseScalaVersion}-graphite"
-    project.tasks.getByName('sourcesJar').baseName = "kafka_${baseScalaVersion}-graphite"
-}
-
-modifyPom {
-    project {
-        name 'Kafka Graphite Metrics Reporter'
-        description 'Graphite integration for Kafka Metrics Reporter'
-        url 'https://github.com/apakulov/kafka-graphite'
-        inceptionYear '2015'
-
-        scm {
+    modifyPom {
+        project {
+            name 'Kafka Graphite Metrics Reporter'
+            description 'Graphite integration for Kafka Metrics Reporter'
             url 'https://github.com/apakulov/kafka-graphite'
-            connection 'scm:git:git@github.com:apakulov/kafka-graphite.git'
-            developerConnection 'scm:git:ssh@github.com:apakulov/kafka-graphite.git'
-        }
+            inceptionYear '2015'
 
-        licenses {
-            license {
-                name 'The Apache Software License, Version 2.0'
-                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                distribution 'repo'
+            scm {
+                url 'https://github.com/apakulov/kafka-graphite'
+                connection 'scm:git:git@github.com:apakulov/kafka-graphite.git'
+                developerConnection 'scm:git:ssh@github.com:apakulov/kafka-graphite.git'
+            }
+
+            licenses {
+                license {
+                    name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    distribution 'repo'
+                }
+            }
+
+            developers {
+                developer {
+                    id 'apakulov'
+                    name 'Alexander Pakulov'
+                    email 'a.pakulov@gmail.com'
+                }
             }
         }
+    }
 
-        developers {
-            developer {
-                id 'apakulov'
-                name 'Alexander Pakulov'
-                email 'a.pakulov@gmail.com'
-            }
+    license {
+        header rootProject.file('LICENSE')
+    }
+}
+
+project(':kafka-graphite') {
+    apply plugin: 'os-package'
+    apply plugin: 'scala'
+
+    ext {
+        ext.baseScalaVersion = '2.10'
+        if (project.hasProperty('scalaVersion')) {
+            String scalaVersion = project.property('scalaVersion');
+            ext.baseScalaVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'))
+        }
+    }
+
+    dependencies {
+        compile "org.apache.kafka:kafka_$baseScalaVersion:0.8.2.1"
+        compile 'com.yammer.metrics:metrics-graphite:2.2.0'
+
+        testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
+    }
+
+    project.afterEvaluate {
+        project.tasks.each {
+            task -> if (task.name.toLowerCase().endsWith('jar'))
+                task.baseName = "kafka_${baseScalaVersion}-graphite"
+        }
+    }
+
+    ospackage {
+        release = '1'
+        os = 'LINUX'
+
+        into '/opt/kafka'
+
+        from(jar.outputs.files) {
+            into 'libs'
+        }
+
+        from(configurations.compile) {
+            include 'metrics-graphite*'
+            into 'libs'
         }
     }
 }
 
-ospackage {
-    release = '1'
-    os = 'LINUX'
+project(':kafka-graphite-clients') {
+    apply plugin: 'java'
 
-    into '/opt/kafka'
+    dependencies {
+        compile 'org.apache.kafka:kafka-clients:0.8.2.1'
+        compile 'com.yammer.metrics:metrics-graphite:2.2.0'
 
-    from(jar.outputs.files) {
-        into 'libs'
-    }
-
-    from(configurations.compile) {
-        include 'metrics-graphite*'
-        into 'libs'
+        testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0'
     }
 }
