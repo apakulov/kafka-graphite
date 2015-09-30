@@ -12,7 +12,7 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka_2.10-graphite</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
 </dependency>
 ```
 
@@ -20,17 +20,17 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka-graphite-clients</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
 </dependency>
 ```
 
 Gradle
 ``` groovy
-compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.4'
+compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.5'
 ```
 
 ``` groovy
-compile 'com.pakulov.kafka:kafka-graphite-clients:0.1.4'
+compile 'com.pakulov.kafka:kafka-graphite-clients:0.1.5'
 ```
 
 Build

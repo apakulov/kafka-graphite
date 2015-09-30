@@ -15,6 +15,9 @@
  */
 package org.apache.kafka.common.metrics;
 
+import org.apache.kafka.common.MetricName;
+import org.apache.kafka.common.metrics.stats.Count;
+import org.apache.kafka.common.utils.SystemTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,22 +33,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class GraphiteReporterTest {
     private GraphiteMockServer graphiteServer;
+    private GraphiteReporter graphiteReporter;
 
     @Before
     public void setUp() {
         graphiteServer = new GraphiteMockServer();
         graphiteServer.start();
+        graphiteReporter = new GraphiteReporter();
     }
 
     @After
     public void tearDown() {
         graphiteServer.close();
+        graphiteReporter.close();
     }
 
     @Test
@@ -56,19 +65,21 @@ public class GraphiteReporterTest {
         configs.put("kafka.graphite.metrics.reporter.enabled", "true");
         configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.exclude", ".*test.*");
+        configs.put("kafka.graphite.metrics.jvm.enabled", "false");
         configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-
-        final GraphiteReporter graphiteReporter = new GraphiteReporter();
         graphiteReporter.configure(configs);
-        graphiteReporter.init(Collections.<KafkaMetric>emptyList());
 
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("valid", "type", "counter")).inc();
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("test", "type", "counter")).inc();
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
+        graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid.type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
     }
 
     @Test
@@ -80,18 +91,19 @@ public class GraphiteReporterTest {
         configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.include", ".*test.*");
         configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-
-        final GraphiteReporter graphiteReporter = new GraphiteReporter();
         graphiteReporter.configure(configs);
-        graphiteReporter.init(Collections.<KafkaMetric>emptyList());
 
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("invalid", "type", "counter")).inc();
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("test", "type", "counter")).inc();
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
+        graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.type"))));
-        assertThat(graphiteServer.content, hasItem(containsString("test.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type")));
     }
 
     @Test
@@ -104,20 +116,21 @@ public class GraphiteReporterTest {
         configs.put("kafka.graphite.metrics.include", ".*valid.*");
         configs.put("kafka.graphite.metrics.exclude", ".*invalid.*");
         configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-
-        final GraphiteReporter graphiteReporter = new GraphiteReporter();
         graphiteReporter.configure(configs);
-        graphiteReporter.init(Collections.<KafkaMetric>emptyList());
 
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("valid", "type", "counter")).inc();
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("invalid", "type", "counter")).inc();
-        com.yammer.metrics.Metrics.defaultRegistry().newCounter(new com.yammer.metrics.core.MetricName("test", "type", "counter")).inc();
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "invalid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
+        graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid.type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test.type"))));
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
     }
 
     @Test
@@ -129,14 +142,58 @@ public class GraphiteReporterTest {
         configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.jvm.enabled", "false");
         configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-
-        final GraphiteReporter graphiteReporter = new GraphiteReporter();
         graphiteReporter.configure(configs);
         graphiteReporter.init(Collections.<KafkaMetric>emptyList());
 
         Thread.sleep(2000);
 
         assertThat(graphiteServer.content, not(hasItem(containsString("jvm"))));
+
+        graphiteReporter.close();
+    }
+
+    @Test
+    public void testOnlyOneReporter_multipleThreads() throws Exception {
+        final Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
+
+        final int numThreads = 10;
+        final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        final List<GraphiteReporter> graphiteReporters = new ArrayList<GraphiteReporter>(numThreads);
+
+        for (int i = 0; i < numThreads; ++i) {
+            graphiteReporters.add(new GraphiteReporter());
+        }
+
+        for (final GraphiteReporter graphiteReporter : graphiteReporters) {
+            executorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    graphiteReporter.configure(configs);
+                    graphiteReporter.init(Collections.<KafkaMetric>emptyList());
+                }
+            });
+        }
+
+        executorService.shutdown();
+        executorService.awaitTermination(60, TimeUnit.SECONDS);
+
+        int numConfiguredInstances = 0;
+        for (GraphiteReporter graphiteReporter : graphiteReporters) {
+            if (graphiteReporter.isGraphiteConfigured()) {
+                numConfiguredInstances++;
+            }
+        }
+
+        assertThat(numConfiguredInstances, equalTo(1));
+
+        for (GraphiteReporter graphiteReporter : graphiteReporters) {
+            graphiteReporter.close();
+        }
     }
 
     private static class GraphiteMockServer extends Thread {
