@@ -15,22 +15,25 @@
  */
 package org.apache.kafka.common.metrics;
 
-import com.yammer.metrics.core.Clock;
-import com.yammer.metrics.core.Gauge;
-import com.yammer.metrics.core.Metric;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricPredicate;
-import com.yammer.metrics.reporting.SocketProvider;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.GRAPHITE_HOST;
@@ -38,16 +41,21 @@ import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.GR
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.INCLUDE;
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.EXCLUDE;
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.PREFIX;
-import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.JVM_ENABLED;
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.REPORTER_ENABLED;
 import static org.apache.kafka.common.metrics.GraphiteReporter.GraphiteConfig.INTERVAL;
 
-public class GraphiteReporter implements MetricsReporter {
-    private static final Logger log = LoggerFactory.getLogger(JmxReporter.class);
-    private static final AtomicBoolean initialized = new AtomicBoolean(false);
+public class GraphiteReporter implements MetricsReporter, Runnable {
+    private static final Logger log = LoggerFactory.getLogger(GraphiteReporter.class);
 
-    private com.yammer.metrics.reporting.GraphiteReporter underlying;
+    private List<KafkaMetric> metricList = Collections.synchronizedList(new ArrayList<KafkaMetric>());
+    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1);
     private GraphiteConfig config;
+
+    private String prefix;
+    private String hostname;
+    private int port;
+    private Pattern include;
+    private Pattern exclude;
 
     @Override
     public void configure(final Map<String, ?> configs) {
@@ -56,111 +64,106 @@ public class GraphiteReporter implements MetricsReporter {
 
     @Override
     public void init(List<KafkaMetric> metrics) {
-        synchronized (initialized) {
-            if (!initialized.get()) {
-                final String hostname = config.getString(GRAPHITE_HOST);
-                final Integer port = config.getInt(GRAPHITE_PORT);
-                final MetricPredicate metricPredicate = new GraphiteMetricPredicate(config.getString(INCLUDE), config.getString(EXCLUDE));
-                final String prefix = config.getString(PREFIX);
-                final int interval = config.getInt(INTERVAL);
+        this.hostname = config.getString(GRAPHITE_HOST);
+        this.port = config.getInt(GRAPHITE_PORT);
+        this.prefix = config.getString(PREFIX);
 
-                final SocketProvider socketProvider = new com.yammer.metrics.reporting.GraphiteReporter.DefaultSocketProvider(hostname, port);
+        final String includeRegex = config.getString(INCLUDE);
+        final String excludeRegex = config.getString(EXCLUDE);
+        this.include = includeRegex != null && !includeRegex.isEmpty() ? Pattern.compile(includeRegex) : null;
+        this.exclude = excludeRegex != null && !excludeRegex.isEmpty() ? Pattern.compile(excludeRegex) : null;
 
-                if (config.getBoolean(REPORTER_ENABLED)) {
-                    try {
-                        for (final KafkaMetric metric : metrics) {
-                            addNewMetric(metric);
-                        }
-                        underlying = new com.yammer.metrics.reporting.GraphiteReporter(com.yammer.metrics.Metrics.defaultRegistry(),
-                                prefix + ".kafka", metricPredicate, socketProvider, Clock.defaultClock());
-                        underlying.printVMMetrics = config.getBoolean(JVM_ENABLED);
-                    } catch (IOException e) {
-                        log.error("Enable to initialize Graphite Reporter", e);
-                    }
+        if (config.getBoolean(REPORTER_ENABLED)) {
+            final int interval = config.getInt(INTERVAL);
 
-                    underlying.start(interval, TimeUnit.SECONDS);
-                    initialized.set(true);
-                }
+            for (final KafkaMetric metric : metrics) {
+                metricList.add(metric);
             }
+            log.info("Configuring Kafka Graphite Reporter with host=%s, port=%d, prefix=%s and include=%s, exclude=%s",
+                    hostname, port, prefix, includeRegex, excludeRegex);
+            executor.scheduleAtFixedRate(this, interval, interval, TimeUnit.SECONDS);
         }
     }
 
     @Override
     public void metricChange(final KafkaMetric metric) {
-        addNewMetric(metric);
+        metricList.add(metric);
     }
 
     @Override
     public void close() {
-        synchronized (initialized) {
-            if (initialized.get() && underlying != null) {
-                initialized.set(false);
-                underlying.shutdown();
-                underlying = null;
+        metricList = null;
+        if (executor != null) {
+            executor.shutdown();
+        }
+    }
+
+    @Override
+    public void run() {
+        Socket socket = null;
+        Writer writer = null;
+        try {
+            socket = new Socket(hostname, port);
+            writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+
+            final long timestamp = System.currentTimeMillis() / 1000;
+
+            for (KafkaMetric metric : metricList) {
+                final String name = sanitizeName(metric.metricName());
+                if (null != include && !include.matcher(name).matches()) {
+                    continue;
+                }
+                if (null != exclude && exclude.matcher(name).matches()) {
+                    continue;
+                }
+
+                if (prefix != null && !prefix.isEmpty()) {
+                    writer.write(config.getString(PREFIX));
+                    writer.write('.');
+                }
+                writer.write(name);
+                writer.write(',');
+                writer.write(String.format(Locale.US, "%2.2f", metric.value()));
+                writer.write(',');
+                writer.write(Long.toString(timestamp));
+                writer.write('\n');
+                writer.flush();
+            }
+        } catch (Exception e) {
+            log.warn("Error writing to Graphite", e);
+            if (writer != null) {
+                try {
+                    writer.flush();
+                } catch (IOException e1) {
+                    log.error("Error while flushing writer:", e1);
+                }
+            }
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    log.error("Error while closing socket:", e);
+                }
             }
         }
     }
 
-    // Visible for testing
-    boolean isGraphiteConfigured() {
-        return underlying != null;
+    private String sanitizeName(MetricName name) {
+        StringBuilder result = new StringBuilder().append(name.group()).append('.');
+        for (Map.Entry<String, String> tag : name.tags().entrySet()) {
+            result.append(tag.getValue()).append('.');
+        }
+        return result.append(name.name()).toString().replace(' ', '_').replace("\\.", "_");
     }
 
-    private void addNewMetric(final KafkaMetric metric) {
-        final org.apache.kafka.common.MetricName metricName = metric.metricName();
-        final Map<String, String> tags = metricName.tags();
-
-        final String group = metricName.group();
-        final String clientId = tags.containsKey("client-id") ? tags.get("client-id").replaceAll("\\.", "_") : "client-id";
-        final String topic = tags.containsKey("topic") ? tags.get("topic").replaceAll("\\.", "_") : null;
-        final String name = metricName.name();
-        com.yammer.metrics.Metrics.defaultRegistry().newGauge(new MetricName(group, clientId, name, topic), new Gauge<Double>() {
-            @Override
-            public Double value() {
-                final double value = metric.value();
-                return (Double.NEGATIVE_INFINITY == value || Double.isNaN(value)) ? null : value;
-            }
-        });
-    }
-
-    private static class GraphiteMetricPredicate implements MetricPredicate {
-        private final Pattern include;
-        private final Pattern exclude;
-
-        public GraphiteMetricPredicate(String include, String exclude) {
-            this.include = (null != include && !include.isEmpty()) ? Pattern.compile(include) : null;
-            this.exclude = (null != exclude && !exclude.isEmpty()) ? Pattern.compile(exclude) : null;
-        }
-
-        @Override
-        public boolean matches(MetricName name, Metric metric) {
-            final String groupedMetricName = groupMetricName(name);
-            if (null != include && !include.matcher(groupedMetricName).matches()) {
-                return false;
-            }
-            if (null != exclude && exclude.matcher(groupedMetricName).matches()) {
-                return false;
-            }
-            return true;
-        }
-
-        private String groupMetricName(MetricName name) {
-            StringBuilder result = new StringBuilder().append(name.getGroup()).append('.').append(name.getType()).append('.');
-            if (name.hasScope()) {
-                result.append(name.getScope()).append('.');
-            }
-            return result.append(name.getName()).toString().replace(' ', '_');
-        }
-    }
-
-    static class GraphiteConfig extends AbstractConfig {
+    public static class GraphiteConfig extends AbstractConfig {
         public static final String REPORTER_ENABLED = "kafka.graphite.metrics.reporter.enabled";
         public static final String GRAPHITE_HOST = "kafka.graphite.metrics.host";
         public static final String GRAPHITE_PORT = "kafka.graphite.metrics.port";
         public static final String PREFIX = "kafka.graphite.metrics.prefix";
         public static final String INCLUDE = "kafka.graphite.metrics.include";
         public static final String EXCLUDE = "kafka.graphite.metrics.exclude";
-        public static final String JVM_ENABLED = "kafka.graphite.metrics.jvm.enabled";
         public static final String INTERVAL = "kafka.metrics.polling.interval.secs";
 
         private static final ConfigDef configDefinition = new ConfigDef()
@@ -170,7 +173,6 @@ public class GraphiteReporter implements MetricsReporter {
                 .define(PREFIX, ConfigDef.Type.STRING, "kafka", ConfigDef.Importance.MEDIUM, "The metric prefix that's sent with metric names")
                 .define(INCLUDE, ConfigDef.Type.STRING, "", ConfigDef.Importance.LOW, "A regular expression allowing explicitly include certain metrics")
                 .define(EXCLUDE, ConfigDef.Type.STRING, "", ConfigDef.Importance.LOW, "A regular expression allowing you to exclude certain metrics")
-                .define(JVM_ENABLED, ConfigDef.Type.BOOLEAN, "true", ConfigDef.Importance.LOW, "Controls JVM metrics output")
                 .define(INTERVAL, ConfigDef.Type.INT, "60", ConfigDef.Importance.MEDIUM, "Polling interval that will be used for all Kafka metrics");
 
         private GraphiteConfig(Map<?, ?> originals) {

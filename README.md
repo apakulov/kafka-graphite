@@ -12,7 +12,7 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka_2.10-graphite</artifactId>
-  <version>0.1.5</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
@@ -20,17 +20,17 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka-graphite-clients</artifactId>
-  <version>0.1.5</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 Gradle
 ``` groovy
-compile 'com.pakulov.kafka:kafka_2.10-graphite:0.1.5'
+compile 'com.pakulov.kafka:kafka_2.10-graphite:0.2.0'
 ```
 
 ``` groovy
-compile 'com.pakulov.kafka:kafka-graphite-clients:0.1.5'
+compile 'com.pakulov.kafka:kafka-graphite-clients:0.2.0'
 ```
 
 Build
@@ -53,6 +53,7 @@ At first you have to configure kafka reporters *server.properties* file
 
 For **KafkaMetricsReporter** use:
 * `kafka.metrics.reporters=kafka.metrics.KafkaGraphiteMetricsReporter`
+* `kafka.graphite.metrics.jvm.enabled`: Controls JVM metrics output (default: true)
 
 For **MetricsReporter** use:
 * `metric.reporters=org.apache.kafka.common.metrics.GraphiteReporter`
@@ -65,4 +66,3 @@ Plugin has a set of possible parameters:
 * `kafka.graphite.metrics.prefix`: The metric prefix that's sent with metric names (default: kafka)
 * `kafka.graphite.metrics.include`: A regular expression allowing explicitly include certain metrics (default: null)
 * `kafka.graphite.metrics.exclude`: A regular expression allowing you to exclude certain metrics (default: null)
-* `kafka.graphite.metrics.jvm.enabled`: Controls JVM metrics output (default: true)

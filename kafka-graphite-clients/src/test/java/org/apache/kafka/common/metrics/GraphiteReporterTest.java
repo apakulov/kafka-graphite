@@ -33,9 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -134,66 +131,16 @@ public class GraphiteReporterTest {
     }
 
     @Test
-    public void testExcludeJvmMetrics() throws Exception {
-        Map<String, Object> configs = new HashMap<String, Object>();
-        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
-        configs.put("kafka.metrics.polling.interval.secs", "1");
-        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
-        configs.put("kafka.graphite.metrics.host", "localhost");
-        configs.put("kafka.graphite.metrics.jvm.enabled", "false");
-        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-        graphiteReporter.configure(configs);
-        graphiteReporter.init(Collections.<KafkaMetric>emptyList());
-
-        Thread.sleep(2000);
-
-        assertThat(graphiteServer.content, not(hasItem(containsString("jvm"))));
-
-        graphiteReporter.close();
-    }
-
-    @Test
-    public void testOnlyOneReporter_multipleThreads() throws Exception {
+    public void testInitFailure() {
         final Map<String, Object> configs = new HashMap<String, Object>();
         configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
         configs.put("kafka.metrics.polling.interval.secs", "1");
         configs.put("kafka.graphite.metrics.reporter.enabled", "true");
         configs.put("kafka.graphite.metrics.host", "localhost");
-        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
+        configs.put("kafka.graphite.metrics.port", "0");
 
-        final int numThreads = 10;
-        final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        final List<GraphiteReporter> graphiteReporters = new ArrayList<GraphiteReporter>(numThreads);
-
-        for (int i = 0; i < numThreads; ++i) {
-            graphiteReporters.add(new GraphiteReporter());
-        }
-
-        for (final GraphiteReporter graphiteReporter : graphiteReporters) {
-            executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    graphiteReporter.configure(configs);
-                    graphiteReporter.init(Collections.<KafkaMetric>emptyList());
-                }
-            });
-        }
-
-        executorService.shutdown();
-        executorService.awaitTermination(60, TimeUnit.SECONDS);
-
-        int numConfiguredInstances = 0;
-        for (GraphiteReporter graphiteReporter : graphiteReporters) {
-            if (graphiteReporter.isGraphiteConfigured()) {
-                numConfiguredInstances++;
-            }
-        }
-
-        assertThat(numConfiguredInstances, equalTo(1));
-
-        for (GraphiteReporter graphiteReporter : graphiteReporters) {
-            graphiteReporter.close();
-        }
+        graphiteReporter.configure(configs);
+        graphiteReporter.init(Collections.<KafkaMetric>emptyList());
     }
 
     private static class GraphiteMockServer extends Thread {
