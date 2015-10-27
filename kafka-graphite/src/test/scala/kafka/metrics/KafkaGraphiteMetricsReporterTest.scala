@@ -64,6 +64,29 @@ class KafkaGraphiteMetricsReporterTest extends FlatSpec with Matchers with Befor
     graphiteServer.close()
   }
 
+  it should "reportCounters" in {
+    val props = new Properties
+    props.put("kafka.metrics.reporters", "kafka.metrics.KafkaGraphiteMetricsReporter")
+    props.put("kafka.metrics.polling.interval.secs", "1")
+    props.put("kafka.graphite.metrics.reporter.enabled", "true")
+    props.put("kafka.graphite.metrics.jvm.enabled", "false")
+    props.put("kafka.graphite.metrics.port", graphiteServer.port.toString)
+
+    val graphiteMetricsReporter = new KafkaGraphiteMetricsReporter()
+    graphiteMetricsReporter.init(new VerifiableProperties(props))
+
+    val counter = Metrics.defaultRegistry().newCounter(new MetricName("test", "type", "counter"))
+    counter.inc()
+    Thread.sleep(2000)
+    counter.inc()
+    Thread.sleep(2000)
+
+    assert(graphiteServer.content.toList.exists(item => item.contains("type.counter.count 1")))
+    assert(graphiteServer.content.toList.exists(item => item.contains("type.counter.count 2")))
+
+    graphiteMetricsReporter.stopReporter()
+  }
+  
   it should "exclude data" in {
     val props = new Properties
     props.put("kafka.metrics.reporters", "kafka.metrics.KafkaGraphiteMetricsReporter")

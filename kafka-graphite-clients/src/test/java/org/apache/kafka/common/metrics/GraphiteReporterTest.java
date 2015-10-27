@@ -55,6 +55,36 @@ public class GraphiteReporterTest {
     }
 
     @Test
+    public void testCounterIncrement() throws Exception {
+        Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
+        configs.put("kafka.graphite.metrics.jvm.enabled", "false");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
+        graphiteReporter.configure(configs);
+
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+
+        final MetricConfig config = new MetricConfig();
+        final Count counter = new Count();
+        final KafkaMetric metric = new KafkaMetric(new Object(), new MetricName("type", "test", tags), counter, config, new SystemTime());
+        metrics.add(metric);
+        graphiteReporter.init(metrics);
+
+        counter.record(config, 1, System.currentTimeMillis());
+        Thread.sleep(2000);
+        counter.record(config, 2, System.currentTimeMillis());
+        Thread.sleep(2000);
+
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,1.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,2.00")));
+    }
+
+    @Test
     public void testExcludeData() throws Exception {
         Map<String, Object> configs = new HashMap<String, Object>();
         configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
