@@ -122,9 +122,9 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
                     writer.write('.');
                 }
                 writer.write(name);
-                writer.write(',');
+                writer.write(' ');
                 writer.write(String.format(Locale.US, "%2.2f", metric.value()));
-                writer.write(',');
+                writer.write(' ');
                 writer.write(Long.toString(timestamp));
                 writer.write('\n');
                 writer.flush();
