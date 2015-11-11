@@ -66,7 +66,7 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
 
         info("Configuring Kafka Graphite Reporter with host=%s, port=%d, prefix=%s and include=%s, exclude=%s, jvm=%s".format(
           metricsConfig.host, metricsConfig.port, metricsConfig.prefix, metricsConfig.include, metricsConfig.exclude, metricsConfig.jvm))
-        underlying = new GraphiteReporter(Metrics.defaultRegistry, metricsConfig.prefix, metricPredicate,
+        underlying = new KafkaGraphiteReporter(Metrics.defaultRegistry, metricsConfig.prefix, metricPredicate,
                                           socketProvider, Clock.defaultClock)
         // Controls JVM metrics output
         underlying.printVMMetrics = metricsConfig.jvm
