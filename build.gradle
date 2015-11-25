@@ -13,7 +13,11 @@ buildscript {
 
 subprojects {
     group 'com.pakulov.kafka'
-    version '0.2.0'
+    version '0.3.0'
+
+    ext {
+        kafkaVersion = "0.9.0.0"
+    }
 
     repositories {
         mavenCentral()
@@ -64,15 +68,15 @@ project(':kafka-graphite') {
     apply plugin: 'scala'
 
     ext {
-        ext.baseScalaVersion = '2.10'
+        baseScalaVersion = '2.10'
         if (project.hasProperty('scalaVersion')) {
             String scalaVersion = project.property('scalaVersion');
-            ext.baseScalaVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'))
+            baseScalaVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'))
         }
     }
 
     dependencies {
-        compile "org.apache.kafka:kafka_$baseScalaVersion:0.8.2.1"
+        compile "org.apache.kafka:kafka_$baseScalaVersion:$kafkaVersion"
         compile 'com.yammer.metrics:metrics-graphite:2.2.0'
 
         testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
@@ -106,7 +110,7 @@ project(':kafka-graphite-clients') {
     apply plugin: 'java'
 
     dependencies {
-        compile 'org.apache.kafka:kafka-clients:0.8.2.1'
+        compile "org.apache.kafka:kafka-clients:$kafkaVersion"
         testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0'
     }
 }
