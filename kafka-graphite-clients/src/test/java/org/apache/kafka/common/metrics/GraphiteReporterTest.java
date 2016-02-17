@@ -56,109 +56,113 @@ public class GraphiteReporterTest {
 
     @Test
     public void testCounterIncrement() throws Exception {
-        Map<String, Object> configs = initializeConfigWithReporter();
+        Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.jvm.enabled", "false");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
         graphiteReporter.configure(configs);
 
-        List<KafkaMetric> metrics = new ArrayList<>();
-        final KafkaMetric metric = createMetric("test");
-        final Count counter = (Count) metric.measurable();
-        final MetricConfig config = metric.config();
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+
+        final MetricConfig config = new MetricConfig();
+        final Count counter = new Count();
+        final KafkaMetric metric = new KafkaMetric(new Object(), new MetricName("type", "test", tags), counter, config, new SystemTime());
         metrics.add(metric);
         graphiteReporter.init(metrics);
-
 
         counter.record(config, 1, System.currentTimeMillis());
         Thread.sleep(2000);
         counter.record(config, 2, System.currentTimeMillis());
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.test 1.00")));
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.test 2.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,1.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,2.00")));
     }
 
     @Test
     public void testExcludeData() throws Exception {
-        Map<String, Object> configs = initializeConfigWithReporter();
+        Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.exclude", ".*test.*");
         configs.put("kafka.graphite.metrics.jvm.enabled", "false");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
         graphiteReporter.configure(configs);
 
-        List<KafkaMetric> metrics = new ArrayList<>();
-        metrics.add(createMetric("valid"));
-        metrics.add(createMetric("test"));
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.test"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
     }
 
     @Test
     public void textIncludeData() throws Exception {
-        Map<String, Object> configs = initializeConfigWithReporter();
+        Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.include", ".*test.*");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
         graphiteReporter.configure(configs);
 
-        List<KafkaMetric> metrics = new ArrayList<>();
-        metrics.add(createMetric("valid"));
-        metrics.add(createMetric("test"));
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.invalid"))));
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.test")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type")));
     }
 
     @Test
     public void testExcludeIncludeData() throws Exception {
-        Map<String, Object> configs = initializeConfigWithReporter();
+        Map<String, Object> configs = new HashMap<String, Object>();
+        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
+        configs.put("kafka.metrics.polling.interval.secs", "1");
+        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
+        configs.put("kafka.graphite.metrics.host", "localhost");
         configs.put("kafka.graphite.metrics.include", ".*valid.*");
         configs.put("kafka.graphite.metrics.exclude", ".*invalid.*");
+        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
         graphiteReporter.configure(configs);
 
-        List<KafkaMetric> metrics = new ArrayList<>();
-        metrics.add(createMetric("valid"));
-        metrics.add(createMetric("invalid"));
-        metrics.add(createMetric("test"));
+        List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("client-id", "topic");
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "invalid", tags), new Count(), new MetricConfig(), new SystemTime()));
+        metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.test"))));
-        assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.invalid"))));
-    }
-
-    @Test
-    public void testRemoveMetric() throws Exception {
-        Map<String, Object> configs = initializeConfigWithReporter();
-        graphiteReporter.configure(configs);
-
-        final KafkaMetric metricToRemove = createMetric("valid-to-remove");
-        List<KafkaMetric> metrics = new ArrayList<>();
-        metrics.add(createMetric("valid"));
-        metrics.add(metricToRemove);
-        graphiteReporter.init(metrics);
-
-        Thread.sleep(2000);
-
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid-to-remove")));
-
-        graphiteReporter.metricRemoval(metricToRemove);
-        graphiteServer.content.clear();
-        Thread.sleep(2000);
-
-        assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.valid-to-remove"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
     }
 
     @Test
     public void testInitFailure() {
-        final Map<String, Object> configs = new HashMap<>();
+        final Map<String, Object> configs = new HashMap<String, Object>();
         configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
         configs.put("kafka.metrics.polling.interval.secs", "1");
         configs.put("kafka.graphite.metrics.reporter.enabled", "true");
@@ -169,25 +173,8 @@ public class GraphiteReporterTest {
         graphiteReporter.init(Collections.<KafkaMetric>emptyList());
     }
 
-    private KafkaMetric createMetric(final String topicName) {
-        final Map<String, String> tags = new HashMap<>();
-        tags.put("client-id", "topic");
-        final MetricName group = new MetricName(topicName, "group", tags);
-        return new KafkaMetric(new Object(), group, new Count(), new MetricConfig(), new SystemTime());
-    }
-
-    private Map<String, Object> initializeConfigWithReporter() {
-        final Map<String, Object> configs = new HashMap<>();
-        configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
-        configs.put("kafka.metrics.polling.interval.secs", "1");
-        configs.put("kafka.graphite.metrics.reporter.enabled", "true");
-        configs.put("kafka.graphite.metrics.host", "localhost");
-        configs.put("kafka.graphite.metrics.port", String.valueOf(graphiteServer.port));
-        return configs;
-    }
-
     private static class GraphiteMockServer extends Thread {
-        private List<String> content = new ArrayList<>();
+        private List<String> content = new ArrayList<String>();
         private Socket socket;
         private ServerSocket server;
         protected Integer port;

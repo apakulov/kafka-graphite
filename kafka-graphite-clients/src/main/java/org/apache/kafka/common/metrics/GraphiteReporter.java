@@ -91,18 +91,10 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
     }
 
     @Override
-    public void metricRemoval(KafkaMetric metric) {
-        metricList.remove(metric);
-    }
-
-    @Override
     public void close() {
         metricList = null;
-        try {
+        if (executor != null) {
             executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            log.error("Unable to shutdown executor gracefully", e);
         }
     }
 

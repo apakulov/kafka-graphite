@@ -1,34 +1,41 @@
 Kafka Graphite Metrics Reporter
 ===============================
-This plugin allows to export data from Kafka instance to Graphite directly. Kafka 0.9.0.+ support. 
-
+This plugin allows to export data from Kafka instance to Graphite directly.
 Plugin supports multiple interfaces:
-- Broker (kafka.metrics.KafkaMetricsReporter)
-- Clients (org.apache.kafka.common.metrics.MetricsReporter)
+- kafka.metrics.KafkaMetricsReporter (Broker and Clients 0.8.2.x)
+- org.apache.kafka.common.metrics.MetricsReporter (Producer 0.8.2.x and Consumer 0.8.3.x)
 
 Install
 -------
-Clients plugin could be integrated by defining next dependencies.
-
 Maven
+``` xml
+<dependency>
+  <groupId>com.pakulov.kafka</groupId>
+  <artifactId>kafka_2.10-graphite</artifactId>
+  <version>0.2.0</version>
+</dependency>
+```
 
 ``` xml
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka-graphite-clients</artifactId>
-  <version>0.3.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 Gradle
+``` groovy
+compile 'com.pakulov.kafka:kafka_2.10-graphite:0.2.0'
+```
 
 ``` groovy
-compile 'com.pakulov.kafka:kafka-graphite-clients:0.3.0'
+compile 'com.pakulov.kafka:kafka-graphite-clients:0.2.0'
 ```
 
 Build
 -----
-Broker plugin could be compiled with different Scala versions, use *scalaVersion* Gradle's property to define version
+Current plugin (kafka-graphite) could be compiled with different Scala versions, use *scalaVersion* Gradle's property to define version
 
 ```
 ./gradlew -PscalaVersion=2.10.5 build 
