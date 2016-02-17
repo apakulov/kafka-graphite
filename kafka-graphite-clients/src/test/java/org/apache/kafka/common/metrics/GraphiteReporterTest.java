@@ -80,8 +80,8 @@ public class GraphiteReporterTest {
         counter.record(config, 2, System.currentTimeMillis());
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,1.00")));
-        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,2.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type 1.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type 2.00")));
     }
 
     @Test
