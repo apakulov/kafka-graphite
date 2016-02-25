@@ -160,7 +160,7 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
         for (Map.Entry<String, String> tag : name.tags().entrySet()) {
             result.append(tag.getValue()).append('.');
         }
-        return result.append(name.name()).toString().replace(' ', '_').replace("\\.", "_");
+        return result.append(name.name()).toString().replace(' ', '_').replace(".", "_");
     }
 
     public static class GraphiteConfig extends AbstractConfig {
