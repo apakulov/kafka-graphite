@@ -80,8 +80,8 @@ public class GraphiteReporterTest {
         counter.record(config, 2, System.currentTimeMillis());
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,1.00")));
-        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type,2.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type 1.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type 2.00")));
     }
 
     @Test
@@ -105,8 +105,8 @@ public class GraphiteReporterTest {
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid_topic_type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test_topic_type"))));
     }
 
     @Test
@@ -129,8 +129,8 @@ public class GraphiteReporterTest {
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
-        assertThat(graphiteServer.content, hasItem(containsString("test.topic.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid_topic_type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type")));
     }
 
     @Test
@@ -155,9 +155,9 @@ public class GraphiteReporterTest {
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid.topic.type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test.topic.type"))));
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.topic.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid_topic_type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test_topic_type"))));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid_topic_type"))));
     }
 
     @Test
