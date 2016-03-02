@@ -13,7 +13,7 @@ buildscript {
 
 subprojects {
     group 'com.pakulov.kafka'
-    version '0.2.2'
+    version '0.2.3'
 
     repositories {
         mavenCentral()
@@ -22,6 +22,10 @@ subprojects {
     apply plugin: 'license'
     apply plugin: 'maven'
     apply plugin: 'nexus'
+    apply plugin: 'java'
+
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 
     modifyPom {
         project {
@@ -103,8 +107,6 @@ project(':kafka-graphite') {
 }
 
 project(':kafka-graphite-clients') {
-    apply plugin: 'java'
-
     dependencies {
         compile 'org.apache.kafka:kafka-clients:0.8.2.1'
         testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0'
