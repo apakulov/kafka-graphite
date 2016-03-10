@@ -155,7 +155,7 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
         }
     }
 
-    private String sanitizeName(MetricName name) {
+    String sanitizeName(MetricName name) {
         StringBuilder result = new StringBuilder().append(name.group()).append('.');
         for (Map.Entry<String, String> tag : name.tags().entrySet()) {
             result.append(tag.getValue().replace(".", "_")).append('.');
