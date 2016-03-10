@@ -158,9 +158,9 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
     private String sanitizeName(MetricName name) {
         StringBuilder result = new StringBuilder().append(name.group()).append('.');
         for (Map.Entry<String, String> tag : name.tags().entrySet()) {
-            result.append(tag.getValue()).append('.');
+            result.append(tag.getValue().replace(".", "_")).append('.');
         }
-        return result.append(name.name()).toString().replace(' ', '_').replace(".", "_");
+        return result.append(name.name()).toString().replace(' ', '_');
     }
 
     public static class GraphiteConfig extends AbstractConfig {
