@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -40,6 +41,8 @@ import static org.hamcrest.Matchers.*;
 public class GraphiteReporterTest {
     private GraphiteMockServer graphiteServer;
     private GraphiteReporter graphiteReporter;
+
+    private static final String TOPIC = "prod.site.graphite_reporter";
 
     @Before
     public void setUp() {
@@ -55,6 +58,16 @@ public class GraphiteReporterTest {
     }
 
     @Test
+    public void testSanitizeName() {
+        Map<String, String> tags = new LinkedHashMap<String, String>();
+        tags.put("client-id", TOPIC);
+        tags.put("client-name", "client.name");
+        MetricName metricName = new MetricName("type", "test", tags);
+        assertThat(graphiteReporter.sanitizeName(metricName),
+                equalTo("test.prod_site_graphite_reporter.client_name.type"));
+    }
+
+    @Test
     public void testCounterIncrement() throws Exception {
         Map<String, Object> configs = new HashMap<String, Object>();
         configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
@@ -67,7 +80,7 @@ public class GraphiteReporterTest {
 
         List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
         Map<String, String> tags = new HashMap<String, String>();
-        tags.put("client-id", "topic");
+        tags.put("client-id", TOPIC);
 
         final MetricConfig config = new MetricConfig();
         final Count counter = new Count();
@@ -80,8 +93,8 @@ public class GraphiteReporterTest {
         counter.record(config, 2, System.currentTimeMillis());
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type 1.00")));
-        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type 2.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.prod_site_graphite_reporter.type 1.00")));
+        assertThat(graphiteServer.content, hasItem(containsString("test.prod_site_graphite_reporter.type 2.00")));
     }
 
     @Test
@@ -98,15 +111,15 @@ public class GraphiteReporterTest {
 
         List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
         Map<String, String> tags = new HashMap<String, String>();
-        tags.put("client-id", "topic");
+        tags.put("client-id", TOPIC);
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid_topic_type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test_topic_type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.prod_site_graphite_reporter.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.prod_site_graphite_reporter.type"))));
     }
 
     @Test
@@ -122,15 +135,15 @@ public class GraphiteReporterTest {
 
         List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
         Map<String, String> tags = new HashMap<String, String>();
-        tags.put("client-id", "topic");
+        tags.put("client-id", TOPIC);
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid_topic_type"))));
-        assertThat(graphiteServer.content, hasItem(containsString("test_topic_type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.prod_site_graphite_reporter.type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("test.prod_site_graphite_reporter.type")));
     }
 
     @Test
@@ -147,7 +160,7 @@ public class GraphiteReporterTest {
 
         List<KafkaMetric> metrics = new ArrayList<KafkaMetric>();
         Map<String, String> tags = new HashMap<String, String>();
-        tags.put("client-id", "topic");
+        tags.put("client-id", TOPIC);
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "valid", tags), new Count(), new MetricConfig(), new SystemTime()));
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "invalid", tags), new Count(), new MetricConfig(), new SystemTime()));
         metrics.add(new KafkaMetric(new Object(), new MetricName("type", "test", tags), new Count(), new MetricConfig(), new SystemTime()));
@@ -155,9 +168,9 @@ public class GraphiteReporterTest {
 
         Thread.sleep(2000);
 
-        assertThat(graphiteServer.content, hasItem(containsString("valid_topic_type")));
-        assertThat(graphiteServer.content, not(hasItem(containsString("test_topic_type"))));
-        assertThat(graphiteServer.content, not(hasItem(containsString("invalid_topic_type"))));
+        assertThat(graphiteServer.content, hasItem(containsString("valid.prod_site_graphite_reporter.type")));
+        assertThat(graphiteServer.content, not(hasItem(containsString("test.prod_site_graphite_reporter.type"))));
+        assertThat(graphiteServer.content, not(hasItem(containsString("invalid.prod_site_graphite_reporter.type"))));
     }
 
     @Test
