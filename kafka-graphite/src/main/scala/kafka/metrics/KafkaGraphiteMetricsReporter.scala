@@ -76,7 +76,7 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
                 metric.processWith(this, name, epoch)
               } catch {
                 case e: Exception => {
-                  println("Error printing regular metrics=" + name, e)
+                  error("Error printing regular metrics=" + name, e)
                 }
               }
             }
