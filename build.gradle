@@ -20,7 +20,7 @@ subprojects {
     }
 
     apply plugin: 'license'
-    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
     apply plugin: 'nexus'
     apply plugin: 'java'
 
@@ -54,6 +54,14 @@ subprojects {
                     name 'Alexander Pakulov'
                     email 'a.pakulov@gmail.com'
                 }
+            }
+        }
+    }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                artifact jar
             }
         }
     }
