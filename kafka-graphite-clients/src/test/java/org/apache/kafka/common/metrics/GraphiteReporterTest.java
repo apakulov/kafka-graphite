@@ -42,7 +42,6 @@ import static org.mockito.Mockito.*;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({GraphiteReporter.class})
-//@PowerMockIgnore("javax.*")
 public class GraphiteReporterTest {
     private GraphiteMockServer graphiteServer;
     private GraphiteReporter graphiteReporter;
