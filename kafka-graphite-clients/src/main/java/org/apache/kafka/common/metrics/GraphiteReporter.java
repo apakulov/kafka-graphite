@@ -48,7 +48,7 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
     private static final Logger log = LoggerFactory.getLogger(GraphiteReporter.class);
 
     private List<KafkaMetric> metricList = Collections.synchronizedList(new ArrayList<KafkaMetric>());
-    private ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1);
+    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1);
     private GraphiteConfig config;
 
     private String prefix;
@@ -83,11 +83,6 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
                     hostname, port, prefix, includeRegex, excludeRegex);
             executor.scheduleAtFixedRate(this, interval, interval, TimeUnit.SECONDS);
         }
-    }
-
-    // This method is for testing only.
-    void setExecutor(ScheduledExecutorService executor) {
-        this.executor = executor;
     }
 
     @Override
