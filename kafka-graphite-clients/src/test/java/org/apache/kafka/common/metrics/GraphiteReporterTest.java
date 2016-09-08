@@ -21,22 +21,27 @@ import org.apache.kafka.common.utils.SystemTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({GraphiteReporter.class})
 public class GraphiteReporterTest {
     private GraphiteMockServer graphiteServer;
     private GraphiteReporter graphiteReporter;
@@ -51,7 +56,6 @@ public class GraphiteReporterTest {
     @After
     public void tearDown() {
         graphiteServer.close();
-        graphiteReporter.close();
     }
 
     @Test
@@ -75,6 +79,7 @@ public class GraphiteReporterTest {
 
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.test 1.00")));
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.test 2.00")));
+        graphiteReporter.close();
     }
 
     @Test
@@ -93,6 +98,7 @@ public class GraphiteReporterTest {
 
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
         assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.test"))));
+        graphiteReporter.close();
     }
 
     @Test
@@ -110,6 +116,7 @@ public class GraphiteReporterTest {
 
         assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.invalid"))));
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.test")));
+        graphiteReporter.close();
     }
 
     @Test
@@ -130,6 +137,7 @@ public class GraphiteReporterTest {
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
         assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.test"))));
         assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.invalid"))));
+        graphiteReporter.close();
     }
 
     @Test
@@ -154,6 +162,7 @@ public class GraphiteReporterTest {
 
         assertThat(graphiteServer.content, hasItem(containsString("group.topic.valid")));
         assertThat(graphiteServer.content, not(hasItem(containsString("group.topic.valid-to-remove"))));
+        graphiteReporter.close();
     }
 
     @Test
@@ -167,6 +176,25 @@ public class GraphiteReporterTest {
 
         graphiteReporter.configure(configs);
         graphiteReporter.init(Collections.<KafkaMetric>emptyList());
+        graphiteReporter.close();
+    }
+
+    @Test
+    public void testClose() throws InterruptedException {
+        Map<String, Object> configs = initializeConfigWithReporter();
+        graphiteReporter.configure(configs);
+
+        ScheduledExecutorService mockExecutor = mock(ScheduledExecutorService.class);
+        Future mockFuture = mock(Future.class);
+        when(mockExecutor.submit(graphiteReporter)).thenReturn(mockFuture);
+        when(mockExecutor.awaitTermination(20, TimeUnit.SECONDS)).thenReturn(true);
+
+        Whitebox.setInternalState(graphiteReporter, "executor", mockExecutor);
+        graphiteReporter.close();
+
+        verify(mockExecutor).shutdown();
+        verify(mockExecutor).submit(graphiteReporter);
+        verify(mockExecutor).awaitTermination(20, TimeUnit.SECONDS);
     }
 
     private KafkaMetric createMetric(final String topicName) {

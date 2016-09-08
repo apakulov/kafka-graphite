@@ -97,15 +97,27 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
 
     @Override
     public void close() {
-        metricList = null;
+        if (config.getBoolean(REPORTER_ENABLED)) {
+            executor.submit(this);
+        }
+        executor.shutdown();
         try {
-            executor.shutdown();
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            // A 20 second timeout should be enough to finish the remaining tasks.
+            if (executor.awaitTermination(20, TimeUnit.SECONDS)) {
+                log.debug("Executor was shut down successfully.");
+            } else {
+                log.error("Timed out before executor was shut down! It's possible some metrics data were not sent out!");
+            }
         } catch (InterruptedException e) {
             log.error("Unable to shutdown executor gracefully", e);
         }
     }
 
+    /** This run method can be called for two purposes:
+     *    - As a scheduled task, see scheduleAtFixedRate
+     *    - As a final task when close() is called
+     *  However, since the size of the ScheduledExecutorService is 1, there's no need to synchronize it.
+     */
     @Override
     public void run() {
         Socket socket = null;
