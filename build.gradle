@@ -117,7 +117,9 @@ project(':kafka-graphite') {
 project(':kafka-graphite-clients') {
     dependencies {
         compile "org.apache.kafka:kafka-clients:0.10.0.0"
-        testCompile 'org.hamcrest:hamcrest-junit:2.0.0.0',
-                'org.easymock:easymock:3.4'
+        testCompile "org.hamcrest:hamcrest-junit:2.0.0.0",
+                'org.powermock:powermock-core:1.6.1',
+                'org.powermock:powermock-module-junit4:1.6.1',
+                'org.powermock:powermock-api-mockito:1.6.1'
     }
 }

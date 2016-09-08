@@ -18,31 +18,31 @@ package org.apache.kafka.common.metrics;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.metrics.stats.Count;
 import org.apache.kafka.common.utils.SystemTime;
-import org.easymock.EasyMock;
-import org.easymock.Mock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.easymock.EasyMock.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({GraphiteReporter.class})
+//@PowerMockIgnore("javax.*")
 public class GraphiteReporterTest {
     private GraphiteMockServer graphiteServer;
     private GraphiteReporter graphiteReporter;
@@ -185,18 +185,17 @@ public class GraphiteReporterTest {
         Map<String, Object> configs = initializeConfigWithReporter();
         graphiteReporter.configure(configs);
 
-        ScheduledExecutorService mockExecutor = createMock(ScheduledExecutorService.class);
-        Future mockFuture = createMock(Future.class);
-        expect(mockExecutor.submit(graphiteReporter)).andReturn(mockFuture);
-        expect(mockExecutor.awaitTermination(20, TimeUnit.SECONDS)).andReturn(true);
-        mockExecutor.shutdown();
-        expectLastCall();
-        replay(mockExecutor);
+        ScheduledExecutorService mockExecutor = mock(ScheduledExecutorService.class);
+        Future mockFuture = mock(Future.class);
+        when(mockExecutor.submit(graphiteReporter)).thenReturn(mockFuture);
+        when(mockExecutor.awaitTermination(20, TimeUnit.SECONDS)).thenReturn(true);
 
-        graphiteReporter.setExecutor(mockExecutor);
+        Whitebox.setInternalState(graphiteReporter, "executor", mockExecutor);
         graphiteReporter.close();
 
-        verify(mockExecutor);
+        verify(mockExecutor).shutdown();
+        verify(mockExecutor).submit(graphiteReporter);
+        verify(mockExecutor).awaitTermination(20, TimeUnit.SECONDS);
     }
 
     private KafkaMetric createMetric(final String topicName) {
