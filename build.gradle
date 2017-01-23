@@ -13,7 +13,7 @@ buildscript {
 
 subprojects {
     group 'com.pakulov.kafka'
-    version '0.4.1'
+    version '0.5.0'
 
     repositories {
         mavenCentral()
@@ -24,8 +24,8 @@ subprojects {
     apply plugin: 'nexus'
     apply plugin: 'java'
 
-    sourceCompatibility = 1.7
-    targetCompatibility = 1.7
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     modifyPom {
         project {
@@ -76,7 +76,7 @@ project(':kafka-graphite') {
     apply plugin: 'scala'
 
     ext {
-        ext.baseScalaVersion = '2.10'
+        ext.baseScalaVersion = '2.11'
         if (project.hasProperty('scalaVersion')) {
             String scalaVersion = project.property('scalaVersion');
             ext.baseScalaVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'))
@@ -84,7 +84,7 @@ project(':kafka-graphite') {
     }
 
     dependencies {
-        compile "org.apache.kafka:kafka_$baseScalaVersion:0.10.0.0"
+        compile "org.apache.kafka:kafka_$baseScalaVersion:0.10.1.1"
         compile 'com.yammer.metrics:metrics-graphite:2.2.0'
 
         testCompile "org.scalatest:scalatest_$baseScalaVersion:2.2.4"
@@ -116,7 +116,7 @@ project(':kafka-graphite') {
 
 project(':kafka-graphite-clients') {
     dependencies {
-        compile "org.apache.kafka:kafka-clients:0.10.0.0"
+        compile "org.apache.kafka:kafka-clients:0.10.1.1"
         testCompile "org.hamcrest:hamcrest-junit:2.0.0.0",
                 'org.powermock:powermock-core:1.6.1',
                 'org.powermock:powermock-module-junit4:1.6.1',
