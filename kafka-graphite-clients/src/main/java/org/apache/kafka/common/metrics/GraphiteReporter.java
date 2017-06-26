@@ -117,6 +117,11 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
             final long timestamp = System.currentTimeMillis() / 1000;
 
             for (KafkaMetric metric : metricList) {
+                double value = metric.value();
+                // DO NOT send an invalid value to graphite
+                if (Double.NEGATIVE_INFINITY == value || Double.isNaN(value)) {
+                    continue;
+                }
                 final String name = sanitizeName(metric.metricName());
                 if (null != include && !include.matcher(name).matches()) {
                     continue;
@@ -129,9 +134,10 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
                     writer.write(config.getString(PREFIX));
                     writer.write('.');
                 }
+                writer.write("kafka.");
                 writer.write(name);
                 writer.write(' ');
-                writer.write(String.format(Locale.US, "%2.2f", metric.value()));
+                writer.write(String.format(Locale.US, "%2.2f", value));
                 writer.write(' ');
                 writer.write(Long.toString(timestamp));
                 writer.write('\n');
