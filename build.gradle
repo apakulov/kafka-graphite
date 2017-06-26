@@ -13,14 +13,14 @@ buildscript {
 
 subprojects {
     group 'com.pakulov.kafka'
-    version '0.5.0'
-
-    repositories {
-        mavenCentral()
-    }
+    version '0.10.2'
 
     ext {
         kafkaVersion = "0.10.2.1"
+    }
+
+    repositories {
+        mavenCentral()
     }
 
     apply plugin: 'license'
@@ -28,8 +28,8 @@ subprojects {
     apply plugin: 'nexus'
     apply plugin: 'java'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
 
     modifyPom {
         project {

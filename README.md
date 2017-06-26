@@ -1,6 +1,6 @@
 Kafka Graphite Metrics Reporter
 ===============================
-This plugin allows to export data from Kafka instance to Graphite directly. Kafka 0.9.0.+ support.
+This plugin allows to export data from Kafka instance to Graphite directly. Kafka 0.10.2.+ support.
 
 Plugin supports multiple interfaces:
 - Broker (kafka.metrics.KafkaMetricsReporter)
@@ -16,14 +16,14 @@ Maven
 <dependency>
   <groupId>com.pakulov.kafka</groupId>
   <artifactId>kafka-graphite-clients</artifactId>
-  <version>0.3.0</version>
+  <version>0.10.2</version>
 </dependency>
 ```
 
 Gradle
 
 ``` groovy
-compile 'com.pakulov.kafka:kafka-graphite-clients:0.3.0'
+compile 'com.pakulov.kafka:kafka-graphite-clients:0.10.2'
 ```
 
 Build

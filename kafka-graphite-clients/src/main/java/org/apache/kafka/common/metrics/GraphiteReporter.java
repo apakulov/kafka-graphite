@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Alexander Pakulov
+ * Copyright 2017 Alexander Pakulov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
             for (final KafkaMetric metric : metrics) {
                 metricList.add(metric);
             }
-            log.info("Configuring Kafka Graphite Reporter with host=%s, port=%d, prefix=%s and include=%s, exclude=%s",
+            log.info("Configuring Kafka Graphite Reporter with host={}, port={}, prefix={} and include={}, exclude={}",
                     hostname, port, prefix, includeRegex, excludeRegex);
             executor.scheduleAtFixedRate(this, interval, interval, TimeUnit.SECONDS);
         }

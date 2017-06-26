@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Alexander Pakulov
+ * Copyright 2017 Alexander Pakulov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,9 +146,7 @@ public class GraphiteReporterTest {
         graphiteReporter.configure(configs);
 
         final KafkaMetric metricToRemove = createMetric("valid-to-remove");
-        List<KafkaMetric> metrics = new ArrayList<>();
-        metrics.add(createMetric("valid"));
-        metrics.add(metricToRemove);
+        List<KafkaMetric> metrics = Arrays.asList(createMetric("valid"), metricToRemove);
         graphiteReporter.init(metrics);
 
         Thread.sleep(2000);
@@ -200,7 +198,7 @@ public class GraphiteReporterTest {
     private KafkaMetric createMetric(final String topicName) {
         final Map<String, String> tags = new HashMap<>();
         tags.put("client-id", "topic");
-        final MetricName group = new MetricName(topicName, "group", tags);
+        final MetricName group = new Metrics().metricName(topicName, "group", tags);
         return new KafkaMetric(new Object(), group, new Count(), new MetricConfig(), new SystemTime());
     }
 
@@ -218,7 +216,7 @@ public class GraphiteReporterTest {
         private List<String> content = new ArrayList<>();
         private Socket socket;
         private ServerSocket server;
-        protected Integer port;
+        private Integer port;
 
         public GraphiteMockServer() {
             try {
