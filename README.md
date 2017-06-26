@@ -1,6 +1,6 @@
 Kafka Graphite Metrics Reporter
 ===============================
-This plugin allows to export data from Kafka instance to Graphite directly. Kafka 0.9.0.+ support. 
+This plugin allows to export data from Kafka instance to Graphite directly. Kafka 0.9.0.+ support.
 
 Plugin supports multiple interfaces:
 - Broker (kafka.metrics.KafkaMetricsReporter)

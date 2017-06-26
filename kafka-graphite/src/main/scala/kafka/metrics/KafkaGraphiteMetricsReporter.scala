@@ -22,6 +22,7 @@ import com.yammer.metrics.core.{Clock, Metric, MetricName, MetricPredicate}
 import com.yammer.metrics.reporting.GraphiteReporter
 import com.yammer.metrics.reporting.GraphiteReporter.DefaultSocketProvider
 import kafka.utils.{VerifiableProperties, Logging}
+import scala.collection.JavaConversions._
 
 trait KafkaGraphiteMetricsReporterMBean extends KafkaMetricsReporterMBean
 
@@ -29,7 +30,7 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
                                     with KafkaGraphiteMetricsReporterMBean
                                     with Logging {
 
-  private var underlying: GraphiteReporter = null
+  private var underlying: GraphiteReporter = _
   private var running = false
   private var initialized = false
 
@@ -67,7 +68,18 @@ class KafkaGraphiteMetricsReporter extends KafkaMetricsReporter
         info("Configuring Kafka Graphite Reporter with host=%s, port=%d, prefix=%s and include=%s, exclude=%s, jvm=%s".format(
           metricsConfig.host, metricsConfig.port, metricsConfig.prefix, metricsConfig.include, metricsConfig.exclude, metricsConfig.jvm))
         underlying = new GraphiteReporter(Metrics.defaultRegistry, metricsConfig.prefix, metricPredicate,
-                                          socketProvider, Clock.defaultClock)
+                                          socketProvider, Clock.defaultClock) {
+          override def printRegularMetrics(epoch: java.lang.Long) = {
+            val metrics = getMetricsRegistry.groupedMetrics(predicate).toMap.values.flatten
+            metrics.foreach { case (name: MetricName, metric: Metric) if metric != null =>
+              try {
+                metric.processWith(this, name, epoch)
+              } catch {
+                case e: Exception => error("Error printing regular metrics=" + name, e)
+              }
+            }
+          }
+        }
         // Controls JVM metrics output
         underlying.printVMMetrics = metricsConfig.jvm
         if (metricsConfig.enabled) {
