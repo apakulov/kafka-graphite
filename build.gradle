@@ -89,6 +89,7 @@ project(':kafka-graphite') {
 
     dependencies {
         compile "org.apache.kafka:kafka_$baseScalaVersion:$kafkaVersion"
+        compile "com.yammer.metrics:metrics-graphite:2.2.0"
 
         testCompile "org.scalatest:scalatest_$baseScalaVersion:3.0.3"
     }
