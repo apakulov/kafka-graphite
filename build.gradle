@@ -8,6 +8,7 @@ buildscript {
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.9.0'
         classpath 'com.netflix.nebula:gradle-ospackage-plugin:2.2.6'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
     }
 }
 
@@ -17,15 +18,21 @@ subprojects {
 
     ext {
         kafkaVersion = "0.10.2.1"
+        confluentVersion = "3.2.1"
     }
 
     repositories {
         mavenCentral()
+        maven {
+            url "http://packages.confluent.io/maven/"
+        }
     }
 
     apply plugin: 'license'
     apply plugin: 'maven-publish'
     apply plugin: 'nexus'
+    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'eclipse'
     apply plugin: 'java'
 
     sourceCompatibility = 1.7
@@ -120,7 +127,8 @@ project(':kafka-graphite') {
 
 project(':kafka-graphite-clients') {
     dependencies {
-        compile "org.apache.kafka:kafka-clients:$kafkaVersion"
+        compile "org.apache.kafka:kafka-clients:$kafkaVersion",
+                "io.confluent:common-metrics:$confluentVersion"
         testCompile "org.hamcrest:hamcrest-junit:2.0.0.0",
                 'org.powermock:powermock-core:1.6.1',
                 'org.powermock:powermock-module-junit4:1.6.1',
