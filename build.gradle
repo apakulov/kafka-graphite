@@ -13,10 +13,10 @@ buildscript {
 
 subprojects {
     group 'com.pakulov.kafka'
-    version '0.10.2'
+    version '0.11.0'
 
     ext {
-        kafkaVersion = "0.10.2.1"
+        kafkaVersion = "0.11.0.0"
     }
 
     repositories {
@@ -80,7 +80,7 @@ project(':kafka-graphite') {
     apply plugin: 'scala'
 
     ext {
-        ext.baseScalaVersion = '2.11'
+        ext.baseScalaVersion = '2.12'
         if (project.hasProperty('scalaVersion')) {
             String scalaVersion = project.property('scalaVersion');
             ext.baseScalaVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf('.'))
