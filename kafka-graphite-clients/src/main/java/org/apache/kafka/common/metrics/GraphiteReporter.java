@@ -128,7 +128,10 @@ public class GraphiteReporter implements MetricsReporter, Runnable {
 
             final long timestamp = System.currentTimeMillis() / 1000;
 
-            for (KafkaMetric metric : metricList) {
+            // Avoid ConcurrentModificationException that can happen when Kafka add/remove a metric while the iteration
+            // is in progress.
+            List<KafkaMetric> localMetricList = new ArrayList<>(metricList);
+            for (KafkaMetric metric : localMetricList) {
                 double value = metric.value();
                 // DO NOT send an invalid value to graphite
                 if (Double.NEGATIVE_INFINITY == value || Double.isNaN(value)) {
