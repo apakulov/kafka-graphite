@@ -22,9 +22,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
+import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,13 +35,12 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.isA;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({GraphiteReporter.class})
@@ -164,6 +166,45 @@ public class GraphiteReporterTest {
     }
 
     @Test
+    public void testConcurrentModification() throws InterruptedException {
+        Map<String, Object> configs = initializeConfigWithReporter();
+        graphiteReporter.configure(configs);
+        final CountDownLatch errorLatch = new CountDownLatch(1);
+
+        // Stub setup.
+        Logger logger = mock(Logger.class);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) {
+                errorLatch.countDown();
+                return null;
+            }
+        }).when(logger).warn(anyString(), isA(ConcurrentModificationException.class));
+        Whitebox.setInternalState(GraphiteReporter.class, "log", logger);
+
+        // Metric setup and start reporting to Graphite
+        final KafkaMetric metricToRemove = createMetric("valid-to-remove");
+        List<KafkaMetric> metrics = new ArrayList<>();
+        metrics.add(metricToRemove);
+        for (int i = 0; i < 10; i++) {
+            metrics.add(createMetric("valid" + i));
+        }
+        graphiteReporter.init(metrics);
+
+        // Try to cause a CME.
+        ExecutorService exceptionCause = Executors.newFixedThreadPool(1);
+        CMERunnable task = new CMERunnable(metricToRemove);
+        exceptionCause.submit(task);
+
+        boolean hasError = errorLatch.await(2, TimeUnit.SECONDS);
+        task.isRunning = false;
+        exceptionCause.shutdown();
+        exceptionCause.awaitTermination(1, TimeUnit.SECONDS);
+
+        assertThat(hasError, is(false));
+    }
+
+    @Test
     public void testInitFailure() {
         final Map<String, Object> configs = new HashMap<>();
         configs.put("metric.reporters", "org.apache.kafka.common.metrics.GraphiteReporter");
@@ -248,6 +289,25 @@ public class GraphiteReporterTest {
                 server.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private class CMERunnable implements Runnable {
+
+        private final KafkaMetric metricToRemove;
+        volatile boolean isRunning;
+
+        public CMERunnable(KafkaMetric metricToRemove) {
+            this.metricToRemove = metricToRemove;
+            isRunning = true;
+        }
+
+        @Override
+        public void run() {
+            while (isRunning) {
+                graphiteReporter.metricRemoval(metricToRemove);
+                graphiteReporter.metricChange(metricToRemove);
             }
         }
     }
